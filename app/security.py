@@ -1,29 +1,38 @@
 from datetime import datetime, timedelta
 from typing import Optional
+
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+
 from app.config import settings
 from app.database import get_db
 from app import models
+from app.constants import ROLE_ADMIN, ROLE_CLIENT, ROLE_VALIDATOR
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
+
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
+
 
 def verify_password(plain: str, hashed: str) -> bool:
     return pwd_context.verify(plain, hashed)
 
+
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=60))
+    expire = datetime.utcnow() + (
+        expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
 
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
@@ -36,7 +45,7 @@ async def get_current_user(
     )
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        user_id: int = payload.get("sub")
+        user_id = payload.get("sub")
         if user_id is None:
             raise credentials_exception
     except JWTError:
@@ -44,11 +53,38 @@ async def get_current_user(
 
     result = await db.execute(select(models.User).where(models.User.id == int(user_id)))
     user = result.scalar_one_or_none()
-    if user is None or not user.is_active:
+    if user is None:
         raise credentials_exception
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Учётная запись заблокирована",
+        )
     return user
 
+
+def require_roles(*roles: str):
+    async def checker(current_user: models.User = Depends(get_current_user)) -> models.User:
+        if current_user.role not in roles:
+            raise HTTPException(status_code=403, detail="Недостаточно прав для этого действия")
+        return current_user
+
+    return checker
+
+
 async def require_admin(current_user: models.User = Depends(get_current_user)) -> models.User:
-    if current_user.role != "admin":
+    if current_user.role != ROLE_ADMIN:
         raise HTTPException(status_code=403, detail="Требуется роль администратора")
+    return current_user
+
+
+async def require_client(current_user: models.User = Depends(get_current_user)) -> models.User:
+    if current_user.role != ROLE_CLIENT:
+        raise HTTPException(status_code=403, detail="Требуется роль клиента")
+    return current_user
+
+
+async def require_validator(current_user: models.User = Depends(get_current_user)) -> models.User:
+    if current_user.role != ROLE_VALIDATOR:
+        raise HTTPException(status_code=403, detail="Требуется роль валидатора")
     return current_user

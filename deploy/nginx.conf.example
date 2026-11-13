@@ -1,0 +1,28 @@
+# Пример HTTPS для пилота (НФТ-06).
+# Сертификат: Let's Encrypt или учебный самоподписанный.
+
+server {
+    listen 443 ssl;
+    server_name logistics.alllove.local;
+
+    ssl_certificate     /etc/ssl/certs/alllove.crt;
+    ssl_certificate_key /etc/ssl/private/alllove.key;
+
+    root /var/www/alllove/frontend;
+    location / {
+        try_files $uri /index.html;
+    }
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:8000/;
+        proxy_set_header Host $host;
+        proxy_set_header Authorization $http_authorization;
+        client_max_body_size 21m;
+    }
+}
+
+server {
+    listen 80;
+    server_name logistics.alllove.local;
+    return 301 https://$host$request_uri;
+}

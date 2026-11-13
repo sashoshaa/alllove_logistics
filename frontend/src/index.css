@@ -1,8 +1,301 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap");
+
+:root {
+  --ivory: #f6f1ea;
+  --paper: #fffcf8;
+  --ink: #1c1410;
+  --muted: #7a6a5e;
+  --wine: #7a2e2a;
+  --gold: #c4a574;
+  --line: #e6d9cc;
 }
 
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
 #root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--ivory);
+  color: var(--ink);
+  font-family: "Manrope", sans-serif;
+}
+
+h1,
+h2,
+.brand-mark,
+.login-title {
+  font-family: "Cormorant Garamond", serif;
+}
+
+.shell {
   min-height: 100vh;
+}
+
+.shell-sider {
+  padding: 28px 18px;
+  border-right: 0 !important;
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  margin-bottom: 36px;
+  padding: 0 8px;
+}
+
+.brand-mark {
+  color: #f6f1ea;
+  font-size: 32px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+}
+
+.brand-sub {
+  color: var(--gold);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-top: 6px;
+}
+
+.shell-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.shell-link {
+  color: #d9cfc4;
+  text-decoration: none;
+  padding: 10px 14px;
+  border-radius: 999px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+
+.shell-link.active,
+.shell-link:hover {
+  background: #7a2e2a;
+  color: #fff;
+}
+
+.shell-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 12px 28px !important;
+  height: auto !important;
+  background: transparent !important;
+}
+
+.shell-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.shell-name {
+  font-weight: 600;
+}
+
+.shell-role {
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.shell-content {
+  padding: 8px 28px 40px;
+}
+
+.shell-menu-btn {
+  display: none !important;
+  margin-right: auto;
+}
+
+.page-title {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 40px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+.page-lead {
+  color: var(--muted);
+  margin: 0 0 24px;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 20px 22px;
+}
+
+.stat-card.danger {
+  border-color: #e3b8b4;
+  background: #fbf3f1;
+}
+
+.stat-label {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.stat-value {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 40px;
+  line-height: 1.1;
+  margin-top: 6px;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+  align-items: center;
+}
+
+.click-row {
+  cursor: pointer;
+}
+
+.overdue-row td {
+  background: #fbf3f1 !important;
+}
+
+.login-screen {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+}
+
+.login-hero {
+  background:
+    linear-gradient(160deg, rgba(28, 20, 16, 0.35), rgba(122, 46, 42, 0.45)),
+    url("https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=1600&q=80")
+      center/cover;
+  color: #f6f1ea;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 56px;
+}
+
+.login-hero h1 {
+  font-size: 72px;
+  margin: 0;
+  font-weight: 600;
+}
+
+.login-hero p {
+  max-width: 420px;
+  font-size: 18px;
+  color: #eadfd3;
+}
+
+.login-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  background: var(--ivory);
+}
+
+.login-card {
+  width: min(420px, 100%);
+}
+
+.login-title {
+  font-size: 36px;
+  margin: 0;
+}
+
+.login-note {
+  color: var(--muted);
+  margin: 8px 0 28px;
+}
+
+.queue-wrap {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.help-card h3 {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 28px;
+  margin-top: 0;
+}
+
+.install-hint {
+  margin-top: 24px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.install-hint code {
+  font-size: 12px;
+  background: #f3ebe3;
+  padding: 1px 6px;
+  border-radius: 6px;
+}
+
+@media (display-mode: standalone) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+@media (max-width: 992px) {
+  .login-screen,
+  .queue-wrap,
+  .stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .login-hero {
+    min-height: 240px;
+    padding: 28px;
+  }
+
+  .login-hero h1 {
+    font-size: 48px;
+  }
+
+  .shell-menu-btn {
+    display: inline-flex !important;
+  }
+
+  .shell-content {
+    padding: 8px 16px 32px;
+  }
+
+  .page-title {
+    font-size: 32px;
+  }
 }

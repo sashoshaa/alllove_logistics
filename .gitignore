@@ -2,3 +2,15 @@ venv/
 __pycache__/
 *.pyc
 .env
+*.db
+dev.db
+.pytest_cache/
+storage/documents/*
+storage/backups/*
+!storage/documents/.gitkeep
+!storage/backups/.gitkeep
+frontend/node_modules/
+frontend/dist/
+deploy/certs/*.key
+deploy/certs/*.crt
+storage/load.db

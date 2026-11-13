@@ -1,45 +1,49 @@
 import type { AuthProvider } from "@refinedev/core";
 import { axiosInstance } from "./dataProvider";
 
+const homeByRole: Record<string, string> = {
+  admin: "/users",
+  client: "/supplies",
+  validator: "/queue",
+};
+
+function persistSession(role: string, fullName: string, userId: number | string) {
+  localStorage.setItem("role", role);
+  localStorage.setItem("full_name", fullName);
+  localStorage.setItem("user_id", String(userId));
+  window.dispatchEvent(new Event("alllove-auth"));
+}
+
 export const authProvider: AuthProvider = {
   login: async ({ email, password }) => {
     try {
       const formData = new URLSearchParams();
       formData.append("username", email);
       formData.append("password", password);
-
-      // Бэк ждёт form-data (OAuth2PasswordRequestForm), а не JSON
       const { data } = await axiosInstance.post("/auth/login", formData, {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
       });
-
       localStorage.setItem("token", data.access_token);
 
-      // Проверим роль — в админку пускаем только admin
       const me = await axiosInstance.get("/auth/me");
-      localStorage.setItem("role", me.data.role);
-      localStorage.setItem("full_name", me.data.full_name);
-
-      if (me.data.role !== "admin") {
-        localStorage.clear();
-        return {
-          success: false,
-          error: {
-            name: "Доступ запрещён",
-            message: "Только администратор может войти в панель",
-          },
-        };
-      }
-
-      return { success: true, redirectTo: "/users" };
-    } catch (e: any) {
-      const message = e.response?.data?.detail || "Неверный email или пароль";
+      persistSession(me.data.role, me.data.full_name, me.data.id);
+      return { success: true, redirectTo: homeByRole[me.data.role] ?? "/" };
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { detail?: string }; status?: number } };
+      const detail = err.response?.data?.detail;
+      const message =
+        typeof detail === "string"
+          ? detail
+          : err.response
+            ? "Неверный email или пароль"
+            : "Сервер недоступен. Запустите backend и обновите страницу.";
       return { success: false, error: { name: "Ошибка входа", message } };
     }
   },
 
   logout: async () => {
     localStorage.clear();
+    window.dispatchEvent(new Event("alllove-auth"));
     return { success: true, redirectTo: "/login" };
   },
 
@@ -49,10 +53,12 @@ export const authProvider: AuthProvider = {
       return { authenticated: false, redirectTo: "/login" };
     }
     try {
-      await axiosInstance.get("/auth/me");
+      const me = await axiosInstance.get("/auth/me");
+      persistSession(me.data.role, me.data.full_name, me.data.id);
       return { authenticated: true };
     } catch {
       localStorage.clear();
+      window.dispatchEvent(new Event("alllove-auth"));
       return { authenticated: false, redirectTo: "/login" };
     }
   },
@@ -60,9 +66,8 @@ export const authProvider: AuthProvider = {
   getPermissions: async () => localStorage.getItem("role"),
 
   getIdentity: async () => ({
-    id: 1,
-    name: localStorage.getItem("full_name") || "Администратор",
-    avatar: "https://i.pravatar.cc/150?img=12",
+    id: Number(localStorage.getItem("user_id") || 0),
+    name: localStorage.getItem("full_name") || "Пользователь",
   }),
 
   onError: async (error) => {

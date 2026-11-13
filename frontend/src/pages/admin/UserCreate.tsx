@@ -5,7 +5,6 @@ import { useNavigate } from "react-router";
 
 export const UserCreate: React.FC = () => {
   const navigate = useNavigate();
-
   const { onFinish, formProps } = useForm({
     resource: "users",
     action: "create",
@@ -16,35 +15,21 @@ export const UserCreate: React.FC = () => {
   });
 
   return (
-    <Card title="Создание пользователя" style={{ maxWidth: 600 }}>
+    <Card title="Создание пользователя" style={{ maxWidth: 640 }}>
       <Form {...formProps} layout="vertical" onFinish={onFinish}>
-        <Form.Item
-          label="Email"
-          name="email"
-          rules={[{ required: true, type: "email", message: "Введите корректный email" }]}
-        >
-          <Input placeholder="user@alllove.ru" />
+        <Form.Item label="Email" name="email" rules={[{ required: true, type: "email" }]}>
+          <Input />
         </Form.Item>
-        <Form.Item
-          label="ФИО"
-          name="full_name"
-          rules={[{ required: true, min: 2, message: "Минимум 2 символа" }]}
-        >
-          <Input placeholder="Иванов Иван Иванович" />
+        <Form.Item label="ФИО" name="full_name" rules={[{ required: true, min: 2 }]}>
+          <Input />
         </Form.Item>
-        <Form.Item
-          label="Пароль"
-          name="password"
-          rules={[{ required: true, min: 6, message: "Минимум 6 символов" }]}
-        >
-          <Input.Password placeholder="Минимум 6 символов" />
+        <Form.Item label="Контакт" name="phone">
+          <Input />
         </Form.Item>
-        <Form.Item
-          label="Роль"
-          name="role"
-          initialValue="client"
-          rules={[{ required: true }]}
-        >
+        <Form.Item label="Пароль" name="password" rules={[{ required: true, min: 6 }]}>
+          <Input.Password />
+        </Form.Item>
+        <Form.Item label="Роль" name="role" initialValue="client" rules={[{ required: true }]}>
           <Select
             options={[
               { value: "client", label: "Клиент (сотрудник шоурума)" },

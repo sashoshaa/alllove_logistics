@@ -1,0 +1,2 @@
+# Ежедневная копия в 03:00 (ФТ-12). Подставьте путь к проекту и venv.
+0 3 * * * cd /path/to/alllove && ./venv/bin/python scripts/backup.py >> /var/log/alllove-backup.log 2>&1
