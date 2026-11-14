@@ -1,0 +1,137 @@
+version: '3'
+
+vars:
+  SYS_PYTHON: '{{if eq OS "windows"}}python{{else}}python3{{end}}'
+  PYTHON: '{{if eq OS "windows"}}./venv/Scripts/python.exe{{else}}./venv/bin/python{{end}}'
+
+tasks:
+  # =========================================================================
+  # ПОЛНЫЙ DOCKER-РЕЖИМ (Работает одинаково на Windows, Linux и macOS)
+  # =========================================================================
+  up:
+    desc: "[Docker] Поднять весь проект (БД + миграции + сиды + Backend + Frontend)"
+    cmds:
+      - docker compose up -d
+      - echo "Frontend -> http://localhost:5173 | Swagger -> http://localhost:8000/docs"
+
+  up:https:
+    desc: "[Docker] Сгенерировать SSL-сертификаты и запустить проект с HTTPS (Nginx)"
+    cmds:
+      - docker compose up -d db backend frontend
+      - docker compose exec backend python scripts/make_certs.py
+      - docker compose --profile https up -d
+      - echo "HTTPS запущен -> https://localhost"
+
+  down:
+    desc: "[Docker] Остановить все контейнеры (сохраняя данные БД)"
+    cmds:
+      - docker compose --profile https down
+
+  logs:
+    desc: "[Docker] Смотреть логи бэкенда и фронтенда"
+    cmds:
+      - docker compose logs -f backend frontend
+
+  seed:
+    desc: "[Docker] Прогнать скрипт начальных данных"
+    cmds:
+      - docker compose exec backend python scripts/seed.py
+
+  certs:
+    desc: "[Docker] Сгенерировать самоподписанные сертификаты в deploy/certs"
+    cmds:
+      - docker compose exec backend python scripts/make_certs.py
+
+  backup:
+    desc: "[Docker] Создать резервную копию"
+    cmds:
+      - docker compose exec backend python scripts/backup.py
+
+  restore:
+    desc: "[Docker] Восстановить из копии (task restore -- 2026-11-14)"
+    cmds:
+      - docker compose exec backend python scripts/restore.py {{.CLI_ARGS}}
+
+  test:
+    desc: "[Docker] Запустить автотесты pytest"
+    cmds:
+      - docker compose exec backend pytest -q
+
+  load:
+    desc: "[Docker] Нагрузочный тест НФТ-03"
+    cmds:
+      - docker compose exec backend python scripts/load_check.py
+
+  reset:
+    desc: "[Docker] ПОЛНЫЙ СБРОС: удалить том БД и пересоздать проект"
+    cmds:
+      - docker compose --profile https down -v
+      - docker compose up -d
+
+  # =========================================================================
+  # ЛОКАЛЬНЫЙ ГИБРИДНЫЙ РЕЖИМ (БД в Docker, код локально)
+  # =========================================================================
+  local:install:
+    desc: "[Local] Создать venv и установить зависимости (Python + Node.js)"
+    cmds:
+      - '{{.SYS_PYTHON}} -m venv venv'
+      - '{{.PYTHON}} -m pip install --upgrade pip'
+      - '{{.PYTHON}} -m pip install -r requirements.txt'
+      - npm --prefix frontend install
+
+  local:db:
+    desc: "[Local] Оставить в Docker только БД (остановить backend и frontend)"
+    cmds:
+      - docker compose --profile https stop backend frontend https
+      - docker compose up -d db
+      - echo "БД запущена на localhost:5433. Порты 8000 и 5173 свободны."
+
+  local:seed:
+    desc: "[Local] Применить миграции и наполнить БД"
+    cmds:
+      - '{{.PYTHON}} -m alembic upgrade head'
+      - '{{.PYTHON}} scripts/seed.py'
+
+  local:back:
+    desc: "[Local] Запустить локальный Backend (FastAPI на 8000)"
+    cmds:
+      - '{{.PYTHON}} -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000'
+
+  local:front:
+    desc: "[Local] Запустить локальный Frontend (Vite на 5173)"
+    env:
+      VITE_PROXY_TARGET: "http://127.0.0.1:8000"
+    cmds:
+      - npm --prefix frontend run dev
+
+  desktop:
+    desc: "[Local] Запустить десктоп-клиент валидатора (tkinter)"
+    env:
+      ALLLOVE_API_URL: "http://127.0.0.1:8000"
+    cmds:
+      - '{{.PYTHON}} -m desktop'
+
+  local:test:
+    desc: "[Local] Запустить pytest локально"
+    cmds:
+      - '{{.PYTHON}} -m pytest -q'
+
+  local:backup:
+    desc: "[Local] Создать бэкап локально"
+    cmds:
+      - '{{.PYTHON}} scripts/backup.py'
+
+  local:restore:
+    desc: "[Local] Восстановить базу локально"
+    cmds:
+      - '{{.PYTHON}} scripts/restore.py {{.CLI_ARGS}}'
+
+  local:load:
+    desc: "[Local] Нагрузочный тест локально"
+    cmds:
+      - '{{.PYTHON}} scripts/load_check.py'
+
+  local:certs:
+    desc: "[Local] Сгенерировать SSL-сертификаты локально"
+    cmds:
+      - '{{.PYTHON}} scripts/make_certs.py'

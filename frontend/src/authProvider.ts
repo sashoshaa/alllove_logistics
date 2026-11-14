@@ -30,13 +30,18 @@ export const authProvider: AuthProvider = {
       return { success: true, redirectTo: homeByRole[me.data.role] ?? "/" };
     } catch (e: unknown) {
       const err = e as { response?: { data?: { detail?: string }; status?: number } };
+      const status = err.response?.status;
       const detail = err.response?.data?.detail;
-      const message =
-        typeof detail === "string"
-          ? detail
-          : err.response
-            ? "Неверный email или пароль"
-            : "Сервер недоступен. Запустите backend и обновите страницу.";
+
+      let message: string;
+      if (typeof detail === "string") {
+        message = detail;
+      } else if (status === 400 || status === 401 || status === 422) {
+        message = "Неверный email или пароль";
+      } else {
+        message = `Сервер API недоступен (статус: ${status ?? "нет соединения"}). Проверьте, запущен ли backend.`;
+      }
+
       return { success: false, error: { name: "Ошибка входа", message } };
     }
   },

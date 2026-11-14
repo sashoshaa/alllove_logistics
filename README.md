@@ -5,9 +5,9 @@
 Два клиента к одному API:
 
 - **веб** — сотрудник шоурума и администратор; на телефоне ставится как приложение («На экран Домой»);
-- **десктоп / мобильный клиент валидатора** — очередь проверки, документы, сверка количеств. На компьютере: `python -m desktop`. На телефоне тот же веб ставится как PWA.
+- **десктоп / мобильный клиент валидатора** — очередь проверки, документы, сверка количеств. На компьютере: `task desktop` или `python -m desktop`. На телефоне тот же веб ставится как PWA.
 
-Стек: FastAPI + SQLAlchemy + PostgreSQL, React + TypeScript + Refine + Ant Design, JWT, tkinter.
+Стек: FastAPI + SQLAlchemy + PostgreSQL, React + TypeScript + Refine + Ant Design, JWT, tkinter, Taskfile.
 
 После входа открывается рабочее место роли:
 
@@ -21,8 +21,64 @@
 - Docker Desktop (PostgreSQL)
 - Node.js 18+
 - Git
+- [Task](https://taskfile.dev/) - рекомендуется для управления проектом одной строкой
 
 ## Запуск
+
+## Быстрый запуск через Taskfile (Рекомендуется)
+
+Проект содержит кроссплатформенный `Taskfile.yml`, работающий одинаково на **Windows, Linux и macOS**.
+
+### Вариант А: Полный Docker-режим (всё в контейнерах)
+
+Поднимает базу данных, применяет миграции, наполняет демо-данными, запускает бэкенд и фронтенд:
+
+```bash
+task up
+```
+
+- **Frontend**: http://localhost:5173
+- **Swagger API**: http://localhost:8000/docs
+
+Остановка контейнеров (с сохранением данных БД):
+
+```bash
+task down
+```
+
+### Вариант Б: Локальный гибридный режим (Только БД в Docker, код на хосте)
+
+Удобно для разработки и отладки:
+
+1. Запустить в Docker только базу данных, освободив порты `8000` и `5173`:
+
+```bash
+task local:db
+```
+
+2. Установить зависимости (создастся `venv` и `node_modules`):
+
+```bash
+task local:install
+```
+
+3. Применить миграции и сиды:
+
+```bash
+task local:seed
+```
+
+4. Запустить бэкенд и фронтенд (в двух разных терминалах):
+
+```bash
+task local:back
+```
+
+```bash
+task local:front
+```
+
+## Классический ручной запуск (без Taskfile)
 
 ### 1. База данных
 
@@ -42,9 +98,11 @@ docker compose up -d
 
 ```bash
 python3 -m venv venv
-source venv/bin/activate
+# На Windows: venv\Scripts\activate | На Linux/macOS: source venv/bin/activate
 pip install -r requirements.txt
-uvicorn app.main:app --reload
+alembic upgrade head
+python scripts/seed.py
+uvicorn app.main:app --reload --port 8000
 ```
 
 Если порт 8000 занят: `uvicorn app.main:app --reload --port 8001`  
@@ -58,25 +116,25 @@ HTTPS пилота (самоподписанный сертификат):
 
 ```bash
 python scripts/make_certs.py
-python scripts/run_https.py
+# Или через Taskfile: task up:https
 ```
 
-API: https://127.0.0.1:8443  
-Либо `docker compose --profile https up`, если Docker доступен. Браузер спросит доверие к учебному сертификату.
+API: `https://localhost` (или `https://127.0.0.1:8443`). Браузер спросит доверие к учебному сертификату.
 
 ### 3. Начальные данные
 
 ```bash
 python scripts/seed.py
+# Или через Taskfile: task seed / task local:seed
 ```
 
-| Роль | Email | Пароль |
-|---|---|---|
-| Администратор | admin@alllove.ru | admin123 |
-| Клиент | client1@alllove.ru | client123 |
-| Клиент | client2@alllove.ru | client123 |
-| Клиент | client3@alllove.ru | client123 |
-| Валидатор | validator@alllove.ru | validator123 |
+| Роль          | Email                | Пароль       |
+| ------------- | -------------------- | ------------ |
+| Администратор | admin@alllove.ru     | admin123     |
+| Клиент        | client1@alllove.ru   | client123    |
+| Клиент        | client2@alllove.ru   | client123    |
+| Клиент        | client3@alllove.ru   | client123    |
+| Валидатор     | validator@alllove.ru | validator123 |
 
 `python scripts/seed.py` также создаёт 10 демо-поставок со статусами, накладными PDF и фото коробок. Повторный запуск их не дублирует.
 
@@ -89,7 +147,6 @@ npm run dev
 ```
 
 Интерфейс: http://localhost:5173
-
 На телефоне откройте тот же адрес в Chrome или Safari и добавьте на Домой — это мобильное приложение.
 
 ### 5. Десктоп валидатора
@@ -98,22 +155,28 @@ npm run dev
 
 ```bash
 python -m desktop
+# Или используя task: task desktop
 ```
 
-Вход: `validator@alllove.ru` / `validator123`. Адрес сервера по умолчанию `http://127.0.0.1:8001` (или `ALLLOVE_API_URL`). Сотрудник шоурума и администратор входят через веб.
+Вход: `validator@alllove.ru` / `validator123`. Адрес сервера по умолчанию `http://127.0.0.1:8000` (либо задается через переменную окружения `ALLLOVE_API_URL`).
 
-## Тесты
+## Тесты и нагрузка
+
+Автотесты pytest:
 
 ```bash
-pytest -q
+task test
+# Или локально: task local:test (или pytest -q)
 ```
 
 Покрывают UC-01–UC-12, миграции, сертификат HTTPS и фильтры. Изолированная SQLite, Docker не нужен.
 
-Нагрузка 5000 поставок / 20 сессий (НФТ-03):
+Нагрузочный тест НФТ-03 (5000 поставок / 20 сессий):
 
 ```bash
-python scripts/load_check.py
+task load
+# Или локально: task local:load
+# python scripts/load_check.py
 ```
 
 Протокол пишется в `docs/load_protocol.md`.
@@ -126,6 +189,13 @@ python scripts/load_check.py
 python scripts/backup.py
 python scripts/restore.py            # последняя копия
 python scripts/restore.py 2026-11-13 # конкретный день
+```
+
+```bash
+#Используя task
+task backup                                    # Создать копию
+task restore                                   # Восстановить последнюю
+task restore -- 2026-11-14                     # Восстановить за конкретный день
 ```
 
 Либо разделы **Копии** у администратора. Хранятся последние 7 дневных комплектов «база + файлы».

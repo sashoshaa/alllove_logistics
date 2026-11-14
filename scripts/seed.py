@@ -392,7 +392,11 @@ async def seed() -> None:
                     if not kind:
                         continue
                     name, ctype, data = _make_doc(kind, supply, row, sku)
-                    Path(doc.filename).write_bytes(data)
+                    old_path = Path(doc.filename.replace("\\", "/"))
+                    target_path = Path(settings.UPLOAD_DIR) / old_path.parent.name / old_path.name
+                    target_path.parent.mkdir(parents=True, exist_ok=True)
+                    target_path.write_bytes(data)
+                    doc.filename = str(target_path)
                     doc.size = len(data)
                     doc.content_type = ctype
                     doc.original_name = name

@@ -108,6 +108,7 @@ async def restore_backup(db: AsyncSession, name: str) -> dict:
                 for column in model.__table__.columns
             }
             db.add(model(**payload))
+        await db.flush()
         restored[table_name] = len(rows)
     await db.commit()
 
